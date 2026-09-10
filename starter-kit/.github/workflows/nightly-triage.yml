@@ -1,0 +1,115 @@
+name: Nightly triage (read-only)
+
+on:
+  schedule:
+    - cron: "17 6 * * 1-5"   # 02:17 America/New_York (UTC-4) on weekdays. Odd minute on purpose:
+                             # GitHub delays jobs queued at the top of the hour. Finishes well before
+                             # the 03:00 settlement batch, which this job must never overlap.
+  workflow_dispatch:         # rerun by hand: gh workflow run nightly-triage.yml -f budget_usd=5
+    inputs:
+      budget_usd:
+        description: Cost ceiling for the agent step (USD)
+        default: "3"
+        type: string
+
+permissions:
+  contents: read             # checkout only
+  actions: read              # to download last night's report artifact
+
+concurrency:
+  group: nightly-triage      # a manual rerun never overlaps the scheduled run
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45      # the backstop bound: budget and turns cap the agent, this caps everything
+    env:
+      # seat: team — needs the CI credential from the platform team (one of the three paths).
+      # API-key path shown; for Bedrock set CLAUDE_CODE_USE_BEDROCK=1 + AWS_REGION and use OIDC instead.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NIGHT_BUDGET_USD: ${{ inputs.budget_usd || '3' }}
+      NIGHT_MAX_TURNS: "25"  # a triage that hasn't converged in 25 turns is looping
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Deterministic phase — run the real suite
+        id: tests
+        continue-on-error: true            # red tests are the input, not a reason to stop
+        run: ./mvnw -B -q test
+
+      - name: Fetch last night's report (for "what's new")
+        continue-on-error: true            # the first night has nothing to fetch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=$(gh run list --workflow nightly-triage.yml --status success --limit 1 --json databaseId -q '.[0].databaseId')
+          [ -n "$RUN_ID" ] && gh run download "$RUN_ID" -n morning-report -D previous/ || echo "no previous run"
+
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash -s stable
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"   # the installer's bin dir is not on PATH in a non-login shell
+
+      - name: Agent phase — read-only triage
+        id: agent
+        continue-on-error: true            # the report step must still run; the last step re-raises the failure
+        run: |
+          CODE=0
+          scripts/run-claude.sh prompts/nightly-triage.md night.json \
+            --bare \
+            --permission-mode dontAsk \
+            --allowedTools "Read,Grep,Glob" \
+            --model sonnet || CODE=$?      # GitHub runs steps with bash -e; capture instead of aborting
+          echo "exit=$CODE" >> "$GITHUB_OUTPUT"
+          exit $CODE
+
+      - name: Publish — job summary and artifact
+        id: publish
+        if: ${{ !cancelled() }}
+        run: |
+          jq -r '.result // "# Morning report — payments-api\n**Verdict:** RED — the agent produced no result (see run-claude line above)"' night.json > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: morning-report
+          path: |
+            report.md
+            night.json
+            target/surefire-reports/
+          retention-days: 30
+
+      - name: Build the Slack payload
+        if: ${{ !cancelled() }}
+        run: |
+          # The headline is MODEL OUTPUT. Read it from the file with jq --arg (safe quoting);
+          # never pass it through ${{ }} — that is a script-injection vector on a runner.
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          jq -n --arg h "$(sed -n '2p' report.md)" --arg u "$RUN_URL" \
+            '{text: ("Morning report · payments-api · " + $h),
+              blocks: [
+                {type: "section", text: {type: "mrkdwn", text: ("*Morning report · payments-api*\n" + $h)}},
+                {type: "actions", elements: [{type: "button", text: {type: "plain_text", text: "Open the run"}, url: $u}]}
+              ]}' > slack.json
+
+      - name: Post to #payments-nightly
+        if: ${{ !cancelled() }}
+        uses: slackapi/slack-github-action@v4
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}   # seat: team — an incoming webhook you create for the channel
+          webhook-type: incoming-webhook
+          payload-file-path: ./slack.json
+
+      - name: Re-raise the agent's failure so the run shows red
+        if: ${{ steps.agent.outputs.exit != '0' }}
+        run: |
+          echo "agent exited ${{ steps.agent.outputs.exit }} (0 ok · 1 error · 2 budget/auth partial)"
+          exit 1

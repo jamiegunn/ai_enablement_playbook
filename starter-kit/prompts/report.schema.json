@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "required": ["verdict", "total", "failed", "groups", "new", "resolved", "needs_human"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["GREEN", "AMBER", "RED"] },
+    "total": { "type": "integer" },
+    "failed": { "type": "integer" },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cause", "tests", "evidence", "status", "confidence"],
+        "properties": {
+          "cause": { "type": "string" },
+          "tests": { "type": "array", "items": { "type": "string" } },
+          "evidence": { "type": "string", "description": "path:line of the first frame inside src/" },
+          "status": { "type": "string", "enum": ["NEW", "UNCHANGED"] },
+          "confidence": { "type": "string", "enum": ["verified", "inference"] }
+        }
+      }
+    },
+    "new": { "type": "array", "items": { "type": "string" } },
+    "resolved": { "type": "array", "items": { "type": "string" } },
+    "needs_human": {
+      "type": "array",
+      "items": { "type": "object", "required": ["item"], "properties": { "item": { "type": "string" }, "owner": { "type": "string" } } }
+    }
+  }
+}

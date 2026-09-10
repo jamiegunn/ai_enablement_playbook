@@ -1,0 +1,129 @@
+/* ===== AI Enablement Playbook — theme ===== */
+
+/* ===== Layout: wide content pane =====
+   Starlight caps the main column at --sl-content-width (default 45rem),
+   which strands most of a wide monitor as whitespace. 90vw lets the pane
+   expand into all available space between the nav sidebar and the page
+   TOC while keeping a sliver of breathing room on ultrawide screens.
+   Long tables, code blocks, and Mermaid diagrams benefit most. */
+:root {
+	--sl-content-width: 90vw;
+}
+
+/* Accent palette: warm amber/copper — deliberately a different family from
+   the sister site's indigo, so the two guides are told apart at a glance
+   while sharing the same bones. Tuned for contrast in both themes. */
+:root {
+	--sl-color-accent-low: #4a2e12;
+	--sl-color-accent: #e0983a;
+	--sl-color-accent-high: #ffd9a3;
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #f1eee9;
+	--sl-color-gray-2: #c9c3ba;
+	--sl-color-gray-3: #948d83;
+	--sl-color-gray-4: #5f5950;
+	--sl-color-gray-5: #3d3831;
+	--sl-color-gray-6: #2a2622;
+	--sl-color-black: #1b1815;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #fde7c4;
+	--sl-color-accent: #b0641a;
+	--sl-color-accent-high: #5c3308;
+	--sl-color-white: #1b1815;
+	--sl-color-gray-1: #2a2622;
+	--sl-color-gray-2: #3d3831;
+	--sl-color-gray-3: #5f5950;
+	--sl-color-gray-4: #948d83;
+	--sl-color-gray-5: #c9c3ba;
+	--sl-color-gray-6: #f1eee9;
+	--sl-color-gray-7: #faf8f5;
+	--sl-color-black: #ffffff;
+}
+
+/* Gradient title on the splash hero. */
+[data-has-hero] .hero h1 {
+	background: linear-gradient(90deg, #f6b14a 0%, #f0784f 55%, #d94f7a 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	font-weight: 800;
+}
+
+[data-has-hero] .hero .tagline {
+	font-size: var(--sl-text-xl);
+	line-height: 1.6;
+}
+
+/* Cards: lift on hover, accent border sweep. */
+.card {
+	border-radius: 0.75rem;
+	transition:
+		transform 160ms ease,
+		border-color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.card:hover {
+	transform: translateY(-3px);
+	border-color: var(--sl-color-accent);
+	box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+.card .title {
+	font-size: var(--sl-text-lg);
+}
+
+/* Softer, roomier code blocks. */
+.expressive-code .frame {
+	border-radius: 0.6rem;
+}
+
+/* Inline code stands out just a little. */
+:not(pre) > code {
+	border-radius: 0.35rem;
+	padding-inline: 0.35em;
+}
+
+/* Sidebar: tighten group headings. */
+#starlight__sidebar .top-level > li > details > summary .group-label span {
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-2);
+}
+
+/* Tables read better with row striping. */
+.sl-markdown-content table tbody tr:nth-child(even) {
+	background-color: color-mix(in srgb, var(--sl-color-gray-6) 55%, transparent);
+}
+
+/* Blog post cards on the Field Notes index. */
+article.preview {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.75rem;
+	padding: 1rem 1.25rem;
+	transition: border-color 160ms ease;
+}
+
+article.preview:hover {
+	border-color: var(--sl-color-accent);
+}
+
+/* Mermaid diagrams (rendered client-side from <pre class="mermaid">). Strip the
+   default code-block chrome; the <pre> is replaced by an SVG once rendered. */
+pre.mermaid {
+	background: none;
+	border: none;
+	padding: 0;
+	margin-block: 1.5rem;
+	text-align: center;
+	overflow-x: auto;
+	line-height: 1.2;
+}
+pre.mermaid svg {
+	height: auto;
+	max-width: 100%;
+}

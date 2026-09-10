@@ -1,0 +1,74 @@
+---
+// Override of the MarkdownContent component.
+//
+// Purpose: improve *findability*. Pagefind can only match words that appear in
+// the rendered page, so a page about characterization tests won't surface for
+// "golden master" or "the agent deleted the failing test" unless those words
+// are on the page. This override injects each page's optional `keywords`
+// frontmatter (see src/content.config.ts) as hidden text that is:
+//   - visually hidden (`sr-only`) and hidden from screen readers (`aria-hidden`),
+//     so it never changes what humans see or hear;
+//   - rendered INSIDE <main data-pagefind-body>, so Pagefind indexes it as body
+//     text and the page becomes searchable by those terms;
+//   - also tagged `data-pagefind-meta="keywords:…"`, registering a `keywords`
+//     metadata field that is weighted in ranking via
+//     `pagefind.ranking.metaWeights.keywords` in astro.config.mjs.
+//
+// starlight-blog ALSO overrides MarkdownContent (to add the cover/metadata/tags
+// wrapper on Field Notes posts). A Starlight `components` override can only have
+// one owner, so we delegate to starlight-blog's override — which branches
+// between the blog wrapper and Starlight's default — rather than Starlight's raw
+// default. (Note: `starlight-blog/components/MarkdownContent.astro` returns null
+// for non-blog pages, so it must NOT be used here; the `overrides/` entry is the
+// one that handles both.)
+//
+// This component also carries the self-hosted Mermaid renderer (the <script>
+// below). It's the wrapper around all rendered markdown, so it's the natural
+// place to hang a client script that turns <pre class="mermaid"> blocks (emitted
+// by src/plugins/remark-mermaid.mjs) into SVG. Astro bundles the script; the
+// `mermaid` package is dynamically imported ONLY when a diagram is present, so
+// pages without diagrams never download it.
+import BlogAwareMarkdownContent from 'starlight-blog/overrides/MarkdownContent.astro';
+
+const keywords = Astro.locals.starlightRoute.entry.data.keywords as string[] | undefined;
+const keywordText = keywords?.filter(Boolean).join(', ');
+// Descriptions are benefit-phrased summaries that often contain search terms
+// the body never uses verbatim; index them the same way as keywords so a
+// query matching only the description still surfaces the page.
+const description = Astro.locals.starlightRoute.entry.data.description as string | undefined;
+const hiddenText = [keywordText, description].filter(Boolean).join('. ');
+---
+
+{
+	hiddenText && (
+		<span
+			class="sr-only"
+			aria-hidden="true"
+			data-pagefind-meta={keywordText ? `keywords:${keywordText}` : undefined}
+		>
+			{hiddenText}
+		</span>
+	)
+}
+<BlogAwareMarkdownContent><slot /></BlogAwareMarkdownContent>
+
+<script>
+	// Self-hosted Mermaid. Bundled by Astro; the (large) mermaid module is
+	// dynamically imported only when the page actually contains a diagram.
+	const initMermaid = async () => {
+		if (!document.querySelector('pre.mermaid')) return;
+		const { default: mermaid } = await import('mermaid');
+		const theme = (document.documentElement.dataset.theme || '').includes('dark')
+			? 'dark'
+			: 'default';
+		mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme });
+		try {
+			await mermaid.run();
+		} catch (e) {
+			console.error('mermaid', e);
+		}
+	};
+	initMermaid();
+	// Re-run after Starlight client-side navigations (if view transitions are on).
+	document.addEventListener('astro:after-swap', initMermaid);
+</script>

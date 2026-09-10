@@ -1,0 +1,97 @@
+---
+title: AI Enablement Playbook
+description: A field guide for engineering teams putting AI to work on the problems that actually hurt — onboarding onto legacy code, and testing while everyone sleeps.
+template: splash
+hero:
+  title: AI, put to work.
+  tagline: >-
+    The field guide for teams who own their workflow but not the AI platform.
+    Get a legacy estate out of two people's heads and into something a new hire
+    can query. Run bounded agent jobs overnight and read a report worth ten
+    minutes in the morning. With the access you actually have, not the access
+    the demos assume.
+  actions:
+    - text: Start Here
+      link: /ai_enablement_playbook/start/overview/
+      icon: right-arrow
+    - text: Learning Paths
+      link: /ai_enablement_playbook/learning-paths/
+      icon: open-book
+      variant: minimal
+    - text: How Do I…?
+      link: /ai_enablement_playbook/start/solutions-index/
+      icon: list-format
+      variant: minimal
+    - text: Troubleshooting
+      link: /ai_enablement_playbook/troubleshooting/overview/
+      icon: magnifier
+      variant: minimal
+    - text: Field Notes
+      link: /ai_enablement_playbook/blog/
+      icon: pencil
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Two initiatives, one method
+
+<CardGrid stagger>
+	<Card title="Knowledge Transfer Playbook" icon="open-book">
+		Twenty-three repos, a Confluence graveyard, and two engineers who know
+		how it all fits. Inventory the estate, map every repo with citations an
+		expert can stamp in thirty minutes, mine Confluence for what's still
+		true, capture the "why" from the people who know it, and turn the whole
+		thing into a two-week onboarding track that CI keeps honest.
+		[Browse the playbook →](/kt/overview/)
+	</Card>
+	<Card title="Overnight QA Playbook" icon="moon">
+		A scheduled GitHub Actions job runs the suite, then a bounded agent —
+		read-only, budgeted, turn-capped — reads the wreckage and writes a
+		morning report with evidence, not opinions. Then it grows: characterization
+		tests as draft PRs, a browser agent through staging, nightly PR review and
+		dependency triage — each with its blast radius named first.
+		[Browse the playbook →](/overnight-qa/overview/)
+	</Card>
+	<Card title="Start Here" icon="rocket">
+		The seat you sit in (you own the workflow, not the platform), how agentic
+		coding actually works, the Three Levers every technique pulls, what can
+		leave the building, and a Day-1 checklist that ends with a working
+		`CLAUDE.md`. [Start →](/start/overview/)
+	</Card>
+	<Card title="Claude Code Toolkit" icon="seti:config">
+		Reference, not narrative: `CLAUDE.md`, skills, subagents, hooks, MCP,
+		headless mode and the Agent SDK, the GitHub Action, enterprise setup and
+		the cost arithmetic — each explained once and linked from every recipe
+		that uses it. [Browse the toolkit →](/toolkit/overview/)
+	</Card>
+	<Card title="Troubleshooting" icon="warning">
+		It made things up. The session forgot everything. It edited the wrong
+		repo. The night burned the budget and left an empty report. Symptom-first
+		pages, each ending in which lever failed and what to bring the platform
+		team. [Triage →](/troubleshooting/overview/)
+	</Card>
+	<Card title="Field Notes" icon="pencil">
+		The architecture doc that was confidently wrong. The night the agent
+		fixed the test by deleting it. The morning report nobody read. Incidents
+		written up the way they should have been the first time.
+		[Read →](/blog/)
+	</Card>
+</CardGrid>
+
+## Why this site exists
+
+Most material about AI-assisted engineering assumes you set up the AI. In many
+organizations you didn't: a platform team owns the Claude deployment, the
+managed settings on every laptop, the GitHub org policy, and the list of MCP
+servers you may connect to — and security owns the policy about what source
+code and which documents may leave the building. You own your team's repos,
+CI, tests, and onboarding. This guide is written for that reality. Every recipe
+assumes a developer laptop with Claude Code, an API key or provider credentials
+someone else issued, a GitHub org with Actions, a Confluence space, and a chat
+channel — and names, every time, the ask you have to make when a step needs
+more than that.
+
+It is also written with the sister site's conviction: a technique you haven't
+bounded is a demo, not a system. Every unattended job here has a budget, a turn
+cap, a permission mode, and a kill switch before it has a prompt.
